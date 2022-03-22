@@ -90,3 +90,26 @@ func (u *userService) AddUsers(stream pb.UserService_AddUsersServer) error {
 		fmt.Println("Adding", req.Name)
 	}
 }
+
+func (u *userService) AddUserBiStream(stream pb.UserService_AddUserBiStreamServer) error {
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Adding", req.Name)
+
+		err = stream.Send(&pb.UserResultStream{
+			Status: "Added",
+			User:   req,
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Sending", req.Name)
+
+	}
+}

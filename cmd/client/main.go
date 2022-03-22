@@ -20,7 +20,7 @@ func main() {
 	defer connection.Close()
 
 	client := pb.NewUserServiceClient(connection)
-	AddUsers(client)
+	AddUsersBiStream(client)
 }
 
 func AddUser(client pb.UserServiceClient) {
@@ -89,4 +89,46 @@ func AddUsers(client pb.UserServiceClient) {
 	}
 
 	fmt.Println(res)
+}
+
+func AddUsersBiStream(client pb.UserServiceClient) {
+	stream, err := client.AddUserBiStream(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	reqs := []*pb.User{
+		{Id: "123", Name: "Felipe", Email: "felipe@email.com"},
+		{Id: "124", Name: "Henrique", Email: "Henrique@email.com"},
+		{Id: "125", Name: "Sara", Email: "Sara@email.com"},
+		{Id: "126", Name: "Nicolau", Email: "Nicolau@email.com"},
+	}
+
+	wait := make(chan int)
+
+	go func() {
+		for _, req := range reqs {
+			fmt.Println(req.Name)
+			stream.Send(req)
+			time.Sleep(time.Second)
+		}
+		stream.CloseSend()
+	}()
+
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Fatal(err)
+				break
+			}
+			fmt.Println("Recebendo user", res.User.Name, res.Status)
+		}
+		close(wait)
+	}()
+
+	<-wait
 }
