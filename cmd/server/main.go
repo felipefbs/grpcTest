@@ -17,7 +17,8 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterUserServiceServer(grpcServer, services.NewUserService())
+	grpcServices := services.NewUserService()
+	pb.RegisterUserServiceServer(grpcServer, grpcServices)
 	reflection.Register(grpcServer)
 
 	if err := grpcServer.Serve(lis); err != nil {

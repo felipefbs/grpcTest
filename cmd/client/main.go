@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/felipefbs/grpc/pb"
@@ -18,7 +19,7 @@ func main() {
 	defer connection.Close()
 
 	client := pb.NewUserServiceClient(connection)
-	AddUser(client)
+	AddUserVerbose(client)
 }
 
 func AddUser(client pb.UserServiceClient) {
@@ -33,4 +34,31 @@ func AddUser(client pb.UserServiceClient) {
 	}
 
 	fmt.Println(res)
+}
+
+func AddUserVerbose(client pb.UserServiceClient) {
+	req := &pb.User{
+		Id:    "123",
+		Name:  "felipefbs",
+		Email: "a@a.com",
+	}
+
+	responseStream, err := client.AddUserVerbose(context.Background(), req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for {
+		stream, err := responseStream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(stream)
+		fmt.Println("-------------")
+		fmt.Printf("Status: %v\n", stream.Status)
+
+	}
 }
